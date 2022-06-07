@@ -1,6 +1,9 @@
 import {
   buildSearchEngine,
   getSampleSearchEngineConfiguration,
+  loadQueryActions,
+  loadSearchActions,
+  loadSearchAnalyticsActions
 } from "@coveo/headless";
 import { ReactiveController, ReactiveControllerHost } from "lit";
 
@@ -13,7 +16,7 @@ export class SearchController implements ReactiveController {
   private boundOnSubmitSearch: (e: CustomEvent) => void;
   private engine;
 
-  query: String = "";
+  query: string = "";
   results: Array<any> = [];
 
   static getInstance(host: ReactiveControllerHost): SearchController {
@@ -37,7 +40,7 @@ export class SearchController implements ReactiveController {
       configuration: getSampleSearchEngineConfiguration(),
     });
     this.engine.subscribe(this.onEngineUpdate.bind(this));
-    this.engine.executeFirstSearch();
+    // this.engine.executeFirstSearch();
   }
 
   @updateHost({ multiple: true })
@@ -54,7 +57,15 @@ export class SearchController implements ReactiveController {
     this.query = value;
 
     // TODO: Find out how to trigger new search from query
-    console.log(this.query);
+    const QueryActionCreators = loadQueryActions(this.engine);
+
+    this.engine.dispatch(QueryActionCreators.updateQuery({ q: this.query }));
+
+    const SearchActionCreators = loadSearchActions(this.engine);
+    const SearchAnalyticsActionCreators = loadSearchAnalyticsActions(this.engine);
+    const action = SearchActionCreators.executeSearch(SearchAnalyticsActionCreators.logSearchboxSubmit());
+
+    this.engine.dispatch(action);
   }
 
   hostConnected() {}
